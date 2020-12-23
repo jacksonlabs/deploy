@@ -96,16 +96,23 @@ RUN wget https://github.com/sclevine/yj/releases/download/v${YJ_VERSION}/yj-${OS
 
 FROM alpine:3.12
 
-RUN apk add bash=5.0.17-r0 bash-doc bash-completion
+RUN apk add bash bash-doc bash-completion
 RUN sed -i 's/\/bin\/ash/\/bin\/bash/g' /etc/passwd
 COPY aliases.sh /etc/profile.d/
+COPY ps1.sh /etc/profile.d/
 ENV ENV="/etc/profile"
 
 RUN apk add curl wget
 
 RUN apk add python3=3.8.5-r0
-RUN apk add openssh-client=8.3_p1-r1
+RUN apk add openssh-client
 RUN apk add ansible=2.9.14-r0 ansible-doc ansible-lint
+
+RUN apk add mtr nmap bind-tools tcpdump iperf iperf3
+
+RUN echo "default:x:1000:default" >> /etc/group
+RUN echo "default:x:1000:1000:default:/home/default:/bin/bash" >> /etc/passwd
+RUN mkdir -p /home/default && chown -R 1000:1000 /home/default
 
 COPY --from=terraform /tmp/terraform /usr/local/bin/
 COPY --from=vault /tmp/vault /usr/local/bin/
