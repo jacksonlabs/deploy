@@ -1,0 +1,33 @@
+name: trivy-scan
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+jobs:
+  trivy-scan:
+    name: Trivy Build and Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: |
+          docker build -t jacksonlabs/deploy:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'jacksonlabs/deploy:${{ github.sha }}'
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Inspect SARIF report
+        run: cat 'trivy-results.sarif'

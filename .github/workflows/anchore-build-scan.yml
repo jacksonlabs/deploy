@@ -1,0 +1,31 @@
+name: anchore-scan
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+jobs:
+  anchore-scan:
+    name: Anchore Build and Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: |
+          docker build -t jacksonlabs/deploy:${{ github.sha }} .
+
+      - name: Run Anchore vulnerability scanner
+        uses: anchore/scan-action@v2
+        id: scan
+        with:
+          image: "jacksonlabs/deploy:${{ github.sha }}"
+          acs-report-enable: true
+
+      - name: Upload Anchore scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+      
+      - name: Inspect SARIF report
+        run: cat ${{ steps.scan.outputs.sarif }}
